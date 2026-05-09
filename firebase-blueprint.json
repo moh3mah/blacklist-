@@ -1,0 +1,164 @@
+{
+  "entities": {
+    "PhotoPost": {
+      "title": "Photo Post",
+      "description": "A photo shared by a visitor featuring the gang.",
+      "type": "object",
+      "properties": {
+        "imageUrl": {
+          "type": "string",
+          "description": "The URL or Base64 string of the image."
+        },
+        "author": {
+          "type": "string",
+          "description": "Name of the person who posted."
+        },
+        "message": {
+          "type": "string",
+          "description": "Optional message along with the photo."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["imageUrl", "author", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "A message sent in the community chat.",
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The message body."
+        },
+        "author": {
+          "type": "string",
+          "description": "Name of the person who posted."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Firebase UID of sender."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["text", "author", "userId", "createdAt"]
+    },
+    "TimelinePost": {
+      "title": "Timeline Post",
+      "description": "A post in the Twitter-like timeline.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "userId": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "mediaType": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "author", "userId", "mediaUrl", "mediaType", "createdAt"]
+    },
+    "PostComment": {
+      "title": "Post Comment",
+      "description": "A comment on a timeline post.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" },
+        "author": { "type": "string" },
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["text", "author", "userId", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and role.",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin", "owner"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["displayName", "photoURL", "email", "role", "createdAt"]
+    },
+    "GangMember": {
+      "title": "Gang Member",
+      "description": "A member of the gang displayed on the home page.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "role": { "type": "string" },
+        "image": { "type": "string" },
+        "twitter": { "type": "string" },
+        "kick": { "type": "string" },
+        "kickUsername": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "role", "image", "createdAt"]
+    },
+    "LiveStream": {
+      "title": "Live Stream",
+      "description": "A live stream to be displayed on the streams page.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "url": { "type": "string" },
+        "status": { "type": "string", "enum": ["live", "offline"] },
+        "streamerName": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "url", "status", "streamerName", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/streams/{streamId}": {
+      "schema": {
+        "$ref": "#/entities/LiveStream"
+      },
+      "description": "Stores live streams."
+    },
+    "/photos/{photoId}": {
+      "schema": {
+        "$ref": "#/entities/PhotoPost"
+      },
+      "description": "Stores user-submitted photos."
+    },
+    "/messages/{messageId}": {
+      "schema": {
+        "$ref": "#/entities/ChatMessage"
+      },
+      "description": "Stores chat messages."
+    },
+    "/posts/{postId}": {
+      "schema": {
+        "$ref": "#/entities/TimelinePost"
+      },
+      "description": "Stores timeline posts."
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": {
+        "$ref": "#/entities/PostComment"
+      },
+      "description": "Stores comments on timeline posts."
+    },
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/User"
+      },
+      "description": "Stores user profiles."
+    },
+    "/gangMembers/{memberId}": {
+      "schema": {
+        "$ref": "#/entities/GangMember"
+      },
+      "description": "Stores gang members for home page."
+    }
+  }
+}

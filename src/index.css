@@ -1,0 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=Changa:wght@400;700&family=Oswald:wght@500;700&display=swap');
+@import "tailwindcss";
+
+@layer utilities {
+  .glass {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+  }
+  .boss-glow {
+    box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+  }
+  .status-pulse {
+    animation: status-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #020617;
+  background: radial-gradient(circle at 50% 50%, #1e3a8a 0%, #020617 70%);
+  background-size: 200% 200%;
+  animation: bg-pulse 10s ease infinite;
+  color: #f1f5f9;
+  min-height: 100vh;
+  font-family: 'Changa', sans-serif;
+  transition: background 0.3s ease;
+}
+
+body.theme-darker {
+  background: #000000;
+  animation: none;
+}
+
+body.theme-darker .glass {
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+body.theme-darker .boss-glow {
+  box-shadow: 0 0 20px rgba(200, 200, 200, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+@keyframes bg-pulse {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Base scrollbar styling for a dark theme */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.5);
+}
