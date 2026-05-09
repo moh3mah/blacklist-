@@ -14,15 +14,18 @@ service cloud.firestore {
     
     function isAdmin() {
       return isSignedIn() && (
-        ('email' in request.auth.token && request.auth.token.email == 'zwahraahmad31@gmail.com') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'owner'])
+        request.auth.token.email == 'zwahraahmad31@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' || 
+          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner'))
       );
     }
     
     function isOwnerAdmin() {
       return isSignedIn() && (
-        ('email' in request.auth.token && request.auth.token.email == 'zwahraahmad31@gmail.com') ||
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner')
+        request.auth.token.email == 'zwahraahmad31@gmail.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'owner')
       );
     }
 
@@ -127,7 +130,7 @@ service cloud.firestore {
                     (incoming().role == 'user' || (incoming().role in ['admin', 'owner'] && isOwnerAdmin()));
       
       allow update: if isSignedIn() && (
-        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']) && incoming().displayName is string && incoming().displayName.size() <= 50 && incoming().photoURL is string && incoming().photoURL.size() <= 600000) ||
+        (request.auth.uid == userId && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'photoURL']) && (!incoming().keys().hasAny(['displayName']) || (incoming().displayName is string && incoming().displayName.size() <= 50)) && (!incoming().keys().hasAny(['photoURL']) || (incoming().photoURL is string && incoming().photoURL.size() <= 600000))) ||
         (isOwnerAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['role']) && incoming().role in ['user', 'admin', 'owner'])
       );
       allow delete: if false;

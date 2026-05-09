@@ -15,6 +15,7 @@ interface Props {
 
 export default function PostFeed({ user, dbUser, handleLogin }: Props) {
   const [posts, setPosts] = useState<any[]>([]);
+  const [usersMap, setUsersMap] = useState<Record<string, any>>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [postText, setPostText] = useState('');
   const [mediaType, setMediaType] = useState<'none' | 'image' | 'video'>('none');
@@ -29,6 +30,18 @@ export default function PostFeed({ user, dbUser, handleLogin }: Props) {
       setPosts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     }, err => console.error(err));
     return unsub;
+  }, []);
+
+  useEffect(() => {
+    // Fetch users for their updated profile info
+    const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+      const map: Record<string, any> = {};
+      snapshot.forEach(doc => {
+        map[doc.id] = doc.data();
+      });
+      setUsersMap(map);
+    });
+    return unsubUsers;
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,7 +139,7 @@ export default function PostFeed({ user, dbUser, handleLogin }: Props) {
         <div className="flex flex-col gap-4">
           <AnimatePresence>
             {posts.map(post => (
-               <PostItem key={post.id} post={post} user={user} dbUser={dbUser} handleLogin={handleLogin} />
+               <PostItem key={post.id} post={post} user={user} dbUser={dbUser} handleLogin={handleLogin} usersMap={usersMap} />
             ))}
           </AnimatePresence>
           {posts.length === 0 && (
@@ -231,40 +244,10 @@ export default function PostFeed({ user, dbUser, handleLogin }: Props) {
   );
 }
 
-function PostItem({ post, user, dbUser, handleLogin }: {key?: any, post:any, user:any, dbUser?:any, handleLogin:any}) {
-   const [comments, setComments] = useState<any[]>([]);
-   const [showComments, setShowComments] = useState(false);
-   const [commentText, setCommentText] = useState('');
-   const [isSending, setIsSending] = useState(false);
-
-   useEffect(() => {
-     if (showComments) {
-       const q = query(collection(db, `posts/${post.id}/comments`), orderBy('createdAt', 'asc'));
-       const unsub = onSnapshot(q, snap => setComments(snap.docs.map(d => ({id: d.id, ...d.data()}))));
-       return unsub;
-     }
-   }, [showComments, post.id]);
-
-   const handleComment = async (e: React.FormEvent) => {
-     e.preventDefault();
-     if (!user) { handleLogin(); return; }
-     if (!commentText.trim() || isSending) return;
-
-     setIsSending(true);
-     try {
-       await addDoc(collection(db, `posts/${post.id}/comments`), {
-         text: filterProfanity(commentText.trim()),
-         author: user.displayName || 'Visitor',
-         userId: user.uid,
-         createdAt: serverTimestamp()
-       });
-       setCommentText('');
-     } catch (err) {
-       console.error(err);
-     } finally {
-       setIsSending(false);
-     }
-   }
+function PostItem({ post, user, dbUser, handleLogin, usersMap }: {key?: any, post:any, user:any, dbUser?:any, handleLogin:any, usersMap: Record<string, any>}) {
+   const postUser = usersMap[post.userId] || null;
+   const authorName = postUser?.displayName || post.author;
+   const authorPhoto = postUser?.photoURL || null;
 
    const renderMedia = () => {
      if (post.mediaType === 'image' && post.mediaUrl) {
@@ -299,12 +282,12 @@ function PostItem({ post, user, dbUser, handleLogin }: {key?: any, post:any, use
    return (
      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="glass p-4 rounded-2xl border border-white/10 shadow-sm hover:border-white/20 transition">
        <div className="flex gap-3">
-          <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-blue-300 font-bold shrink-0">
-            {post.author.charAt(0).toUpperCase()}
+          <div className="w-10 h-10 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-blue-300 font-bold shrink-0 overflow-hidden">
+            {authorPhoto ? <img src={authorPhoto} alt={authorName} className="w-full h-full object-cover" /> : authorName.charAt(0).toUpperCase()}
           </div>
           <div className="flex-1 min-w-0">
              <div className="flex items-center gap-2 mb-1">
-               <span className="font-bold text-slate-200">{post.author}</span>
+               <span className="font-bold text-slate-200">{authorName}</span>
                {post.createdAt?.toDate && (
                  <span className="text-[10px] text-slate-500">
                    {formatDistanceToNow(post.createdAt.toDate(), { addSuffix: true })}
@@ -315,11 +298,7 @@ function PostItem({ post, user, dbUser, handleLogin }: {key?: any, post:any, use
              {post.text && <p className="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">{post.text}</p>}
              {renderMedia()}
 
-             <div className="flex items-center gap-6 mt-4 border-t border-white/5 pt-3 select-none">
-               <button onClick={() => setShowComments(!showComments)} className={`flex items-center gap-2 text-sm transition group ${showComments ? 'text-blue-400' : 'text-slate-400 hover:text-blue-400'}`}>
-                 <div className="p-1.5 rounded-full group-hover:bg-blue-500/20 transition"><MessageCircle className="w-4 h-4" /></div>
-                 <span>تعليق {comments.length > 0 && `(${comments.length})`}</span>
-               </button>
+             <div className="flex items-center gap-6 mt-4 border-t border-white/5 pt-3 select-none justify-end">
                {(user?.uid === post.userId || (dbUser && ['admin', 'owner'].includes(dbUser.role))) && (
                  <button onClick={async () => {
                    if (window.confirm('هل تريد فعلا حذف هذا المنشور؟')) {
@@ -333,54 +312,6 @@ function PostItem({ post, user, dbUser, handleLogin }: {key?: any, post:any, use
                  </button>
                )}
              </div>
-
-             <AnimatePresence>
-               {showComments && (
-                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 overflow-hidden">
-                   <div className="pl-4 border-r-2 border-white/10 border-l-0 pr-4 space-y-4">
-                     {comments.map(c => (
-                       <div key={c.id} className="flex gap-2">
-                           <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-xs font-bold text-slate-400 shrink-0 border border-slate-700">{c.author.charAt(0).toUpperCase()}</div>
-                           <div className="flex-1 bg-slate-900/50 p-3 rounded-2xl rounded-tr-none text-sm text-slate-200 border border-white/5 shadow-inner relative group">
-                             <div className="flex items-center justify-between mb-1">
-                               <span className="font-bold text-xs text-blue-300">{c.author}</span>
-                               {c.createdAt?.toDate && <span className="text-[9px] text-slate-500">{formatDistanceToNow(c.createdAt.toDate(), { addSuffix: true })}</span>}
-                             </div>
-                             <p className="leading-relaxed">{c.text}</p>
-                             {(user?.uid === c.userId || (dbUser && ['admin', 'owner'].includes(dbUser.role))) && (
-                               <button 
-                                 onClick={async () => {
-                                   if (window.confirm("حذف التعليق؟")) {
-                                     try {
-                                       await deleteDoc(doc(db, `posts/${post.id}/comments`, c.id));
-                                     } catch (err: any) { alert(err.message); }
-                                   }
-                                 }}
-                                 className="absolute left-2 top-2 p-1 text-slate-500 hover:text-red-400 transition opacity-0 group-hover:opacity-100"
-                               >
-                                 <Trash2 className="w-3.5 h-3.5" />
-                               </button>
-                             )}
-                           </div>
-                       </div>
-                     ))}
-                     
-                     <form onSubmit={handleComment} className="flex gap-2 mt-2 pt-2 border-t border-white/5">
-                        <input 
-                          type="text"
-                          placeholder="أضف تعليقاً..."
-                          value={commentText}
-                          onChange={e => setCommentText(e.target.value)}
-                          className="flex-1 bg-black/40 border border-white/10 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-blue-500/50 shadow-inner text-white"
-                        />
-                        <button type="submit" disabled={!commentText.trim() || isSending} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white w-9 h-9 rounded-full flex items-center justify-center transition shrink-0 shadow-lg">
-                          <Send className="w-3.5 h-3.5 rtl:-scale-x-100" />
-                        </button>
-                     </form>
-                   </div>
-                 </motion.div>
-               )}
-             </AnimatePresence>
           </div>
        </div>
      </motion.div>

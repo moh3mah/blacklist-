@@ -4,13 +4,16 @@ import { auth, db } from './firebase';
 import { getDoc, setDoc, doc, serverTimestamp, onSnapshot } from 'firebase/firestore';
 import { signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { Routes, Route, Link } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
 import Community from './pages/Community';
 import AdminDashboard from './pages/AdminDashboard';
 import ProfileSettings from './components/ProfileSettings';
 import Streams from './pages/Streams';
+import { useLiveNotifications } from './hooks/useLiveNotifications';
 
 function App() {
+  useLiveNotifications();
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [dbUser, setDbUser] = useState<any>(null);
   const [errorText, setErrorText] = useState('');
@@ -87,7 +90,7 @@ function App() {
 
   return (
     <div className="min-h-screen flex flex-col p-4 md:p-6 gap-6" dir="rtl">
-      
+      <Toaster position="top-center" />
       {/* Header Container */}
       <header className="relative w-full rounded-2xl overflow-hidden glass border-blue-500/40 shrink-0 min-h-[128px] flex flex-col justify-center">
         <Link to="/" className="absolute inset-0 z-0">

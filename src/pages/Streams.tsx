@@ -8,7 +8,7 @@ interface Props {
   dbUser?: any;
 }
 
-function MemberStreamCard({ member }: { member: any }) {
+function MemberStreamCard({ member, key }: { member: any, key?: any }) {
   const [isLive, setIsLive] = useState<boolean | null>(null);
 
   useEffect(() => {
